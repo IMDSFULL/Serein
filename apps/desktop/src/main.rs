@@ -46,6 +46,7 @@ mod polls_demo;
 #[cfg(feature = "demo")]
 mod post_menu_demo;
 mod proxy_auth;
+mod proton_login;
 mod vpn_setup;
 mod reading_settings;
 mod registered_games;

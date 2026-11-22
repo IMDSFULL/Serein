@@ -176,6 +176,37 @@ impl Core {
 	}
 }
 
+/// Outcome of trying a profile without making it the active route.
+pub struct Probe {
+	pub handshake: Duration,
+	/// A TCP connection to discord.com:443 worked through this server.
+	pub discord: bool,
+}
+
+/// Handshakes with the profile's peer and checks that Discord answers through it, then tears
+/// everything down. Used to pick a working server; nothing is published to [`route`].
+pub async fn probe(config: Config, timeout: Duration) -> Result<Probe, &'static str> {
+	let started = std::time::Instant::now();
+	let dns = config.dns.first().copied();
+	let (handle, stack) = netstack::start(config).await?;
+	let core = Core { handle, dns };
+	let result = async {
+		while !core.is_up() {
+			tokio::time::sleep(Duration::from_millis(25)).await;
+		}
+		let handshake = started.elapsed();
+		let discord = async {
+			let address = core.resolve("discord.com").await?;
+			core.tcp(SocketAddrV4::new(address, 443)).await.map(drop)
+		};
+		let discord = matches!(tokio::time::timeout(Duration::from_secs(5), discord).await, Ok(Ok(())));
+		Probe { handshake, discord }
+	};
+	let outcome = tokio::time::timeout(timeout, result).await;
+	stack.abort();
+	outcome.map_err(|_| "No handshake: the server did not answer")
+}
+
 static ACTIVE: RwLock<Option<Arc<Tunnel>>> = RwLock::new(None);
 static REQUIRED: AtomicBool = AtomicBool::new(false);
 // Serialises start/stop so two toggles cannot interleave their publish step.

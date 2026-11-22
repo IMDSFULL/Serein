@@ -20,7 +20,11 @@ jobs:
         with:
           cache-on-failure: true
       - name: VPN crate tests
-        run: cargo test --locked -p vpn
+        run: cargo test --locked -p vpn -p proton
+      - name: Proton CAPTCHA guard tests
+        run: cargo test --locked -p platform --lib proton_captcha
+      - name: Desktop sign-in tests
+        run: cargo test --locked -p serein --bin serein proton_login
       - name: Check production build
         run: cargo check --locked -p serein --bin serein --no-default-features
       - name: Package app

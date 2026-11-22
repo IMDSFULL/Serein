@@ -15,6 +15,8 @@ demo = ["dep:test-support", "ui/demo"]
 [dependencies]
 diagnostics.workspace = true
 vpn.workspace = true
+proton.workspace = true
+base64 = "0.23"
 extensions.workspace = true
 serde.workspace = true
 serde_json.workspace = true

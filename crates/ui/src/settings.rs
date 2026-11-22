@@ -1083,6 +1083,71 @@ impl MessagingUi {
 					self.vpn.import_requested = true;
 				}
 			});
+			design::card_divider(ui);
+			let stage = self.vpn.proton_stage;
+			let idle = stage == crate::vpn_settings::ProtonStage::Idle;
+			let label = language.text("general-vpn-proton-user");
+			let description = language.text("general-vpn-proton-description");
+			design::row(ui, &label, Some(&description), |ui| {
+				ui.add_enabled(
+					idle,
+					egui::TextEdit::singleline(&mut self.vpn.proton_user)
+						.desired_width(220.0)
+						.char_limit(320),
+				);
+			});
+			let label = language.text("general-vpn-proton-password");
+			design::row(ui, &label, None, |ui| {
+				let edit = egui::TextEdit::singleline(&mut *self.vpn.proton_password)
+					.password(true)
+					.desired_width(220.0)
+					.char_limit(1024);
+				let mut output = edit.show(ui);
+				// Masking still records raw text in egui's undo history.
+				output.state.clear_undoer();
+				output.state.store(ui.ctx(), output.response.id);
+			});
+			let label = language.text("general-vpn-proton-countries");
+			design::row(ui, &label, None, |ui| {
+				ui.add_enabled(
+					idle,
+					egui::TextEdit::singleline(&mut self.vpn.proton_countries)
+						.hint_text("US, MX")
+						.desired_width(220.0)
+						.char_limit(64),
+				);
+			});
+			if stage == crate::vpn_settings::ProtonStage::NeedCode {
+				let label = language.text("general-vpn-proton-code");
+				design::row(ui, &label, None, |ui| {
+					ui.add(
+						egui::TextEdit::singleline(&mut self.vpn.proton_code)
+							.desired_width(120.0)
+							.char_limit(16),
+					);
+					if design::button(ui, "general-vpn-proton-send-code", design::ButtonKind::Outline)
+						.clicked()
+					{
+						self.vpn.proton_action = Some(crate::vpn_settings::ProtonAction::SendCode);
+					}
+				});
+			}
+			design::row(ui, &language.text("general-vpn-proton-action"), None, |ui| {
+				if idle {
+					let ready = !self.vpn.proton_user.trim().is_empty() && !self.vpn.proton_password.is_empty();
+					ui.add_enabled_ui(ready, |ui| {
+						if design::button(ui, "general-vpn-proton-signin", design::ButtonKind::Outline)
+							.clicked()
+						{
+							self.vpn.proton_action = Some(crate::vpn_settings::ProtonAction::SignIn);
+						}
+					});
+				} else if design::button(ui, "general-vpn-proton-cancel", design::ButtonKind::Outline)
+					.clicked()
+				{
+					self.vpn.proton_action = Some(crate::vpn_settings::ProtonAction::Cancel);
+				}
+			});
 		});
 		// The setup walkthrough runs inside the signed-in app.
 		if !signed_out {
