@@ -191,7 +191,7 @@ mod tests {
 				socket.write_all(response.as_bytes()).await.unwrap();
 			}
 		});
-		let client = Client::builder()
+		let client = client_core::fingerprint::tunnel(Client::builder())
 			.no_proxy()
 			.redirect(wreq::redirect::Policy::none())
 			.timeout(Duration::from_secs(2))

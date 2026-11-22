@@ -115,9 +115,16 @@ impl ApiProxy {
 		}
 	}
 
-	/// Explicit proxies have no direct fallback. Automatic retains wreq's NO_PROXY handling.
+	/// Explicit proxies have no direct fallback; the VPN route (see `vpn::proxy_url`) overrides them. Automatic retains wreq's NO_PROXY handling.
 	pub fn client_builder(&self, builder: ClientBuilder) -> Result<ClientBuilder, &'static str> {
 		self.validate()?;
+		// The in-process VPN wins over any API proxy; while it is required but down, requests
+		// fail (the proxy address is unreachable) rather than going out directly.
+		if let Some(url) = vpn::proxy_url() {
+			return Ok(builder
+				.no_proxy()
+				.proxy(Proxy::all(url.as_str()).map_err(|_| "VPN proxy rejected")?));
+		}
 		Ok(match self {
 			Self::Direct => builder.no_proxy(),
 			Self::Automatic => builder,

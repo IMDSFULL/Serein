@@ -120,7 +120,7 @@ fn image_share_source(
 }
 
 async fn download_image_share(url: &str, cancelled: &AtomicBool) -> Result<Vec<u8>, &'static str> {
-	let client = wreq::Client::builder()
+	let client = client_core::fingerprint::tunnel(wreq::Client::builder())
 		.https_only(true)
 		.no_proxy()
 		.redirect(wreq::redirect::Policy::none())

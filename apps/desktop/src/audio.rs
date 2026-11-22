@@ -324,7 +324,7 @@ async fn fetch(
 	if expected == 0 || expected > MAX_FIXTURE_BYTES {
 		return Err(TOO_LARGE);
 	}
-	let client = wreq::Client::builder()
+	let client = client_core::fingerprint::tunnel(wreq::Client::builder())
 		.no_proxy()
 		.redirect(wreq::redirect::Policy::none())
 		.timeout(Duration::from_secs(60))

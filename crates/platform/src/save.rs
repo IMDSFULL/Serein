@@ -17,6 +17,21 @@ pub fn extension_source(
 	}
 }
 
+pub fn vpn_profile_source(
+	parent: Arc<winit::window::Window>,
+) -> impl std::future::Future<Output = Option<PathBuf>> + Send + 'static {
+	let dialog = rfd::AsyncFileDialog::new()
+		.set_parent(parent.as_ref())
+		.set_title("Import WireGuard profile")
+		.add_filter("WireGuard profile", &["conf"])
+		.pick_file();
+	async move {
+		let file = dialog.await?;
+		drop(parent);
+		Some(file.path().to_owned())
+	}
+}
+
 pub fn icon_source(
 	parent: Arc<winit::window::Window>,
 	title: &'static str,

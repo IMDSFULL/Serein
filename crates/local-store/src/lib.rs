@@ -55,6 +55,9 @@ pub struct AppPreferences {
 	/// Request a conversation's page while the pointer rests on it. Off unless the owner turns
 	/// it on: the official client makes no such requests. A saved value is kept as it is.
 	pub preload_on_hover: bool,
+	/// Route this client's own traffic through the WireGuard profile the owner imported. Off by
+	/// default; while on and not connected nothing is sent directly.
+	pub vpn_enabled: bool,
 	/// Show as Idle after 10 minutes of system inactivity; older preferences enable it.
 	pub auto_idle: bool,
 	/// Hide the in-app title strip. macOS and Windows then show the system title bar.
@@ -126,6 +129,7 @@ impl Default for AppPreferences {
 			hide_blocked_messages: false,
 			hide_ignored_messages: false,
 			preload_on_hover: false,
+			vpn_enabled: false,
 			auto_idle: true,
 			hide_title_bar: false,
 			message_requests_collapsed: false,

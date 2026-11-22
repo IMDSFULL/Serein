@@ -46,6 +46,7 @@ mod polls_demo;
 #[cfg(feature = "demo")]
 mod post_menu_demo;
 mod proxy_auth;
+mod vpn_setup;
 mod reading_settings;
 mod registered_games;
 #[cfg(feature = "demo")]
@@ -528,6 +529,11 @@ fn main() -> eframe::Result {
 	// Discord's cookies and installation ID make each launch the same device to the service.
 	if !demo && let Ok(root) = local_store::data_dir() {
 		discord_api::device::keep_in(root.join("discord-device.json"));
+		// The VPN route must exist before any connection, including a restored login.
+		vpn_setup::start_if_enabled(
+			&root,
+			preferences.as_ref().is_ok_and(|saved| saved.vpn_enabled),
+		);
 	}
 	if !demo && let (Some(directory), Ok(saved)) = (&log_directory, &preferences) {
 		diagnostics::install(saved.diagnostics_log, directory.clone());
@@ -1069,6 +1075,7 @@ impl SessionEnd {
 type MonitorKey = (Option<egui::Rect>, Option<f32>, Option<egui::Vec2>, bool);
 struct Desktop {
 	proxy_auth: proxy_auth::Authentication,
+	vpn: vpn_setup::Panel,
 	api_proxy: tokio::sync::watch::Sender<Option<discord_api::proxy::ApiProxy>>,
 	extensions: extension_bridge::Bridge,
 	/// Plugin start-screen playback; its textures exist only while that screen shows.
@@ -2643,6 +2650,7 @@ impl Desktop {
 		};
 		Ok(Self {
 			proxy_auth: proxy_auth::Authentication::default(),
+			vpn: vpn_setup::Panel::default(),
 			api_proxy: tokio::sync::watch::channel(None).0,
 			extensions: extension_bridge::Bridge::default(),
 			start_screen: ui::StartScreenView::default(),
@@ -6289,6 +6297,8 @@ impl eframe::App for Desktop {
 			&self.window,
 			self.fixture_only,
 		);
+		self.vpn
+			.tick(&mut self.messaging.vpn, ctx, &self.runtime, &self.window);
 		if self.extensions.api_proxy_ready() {
 			let route = self.proxy_auth.tick(
 				self.extensions.api_proxy(),

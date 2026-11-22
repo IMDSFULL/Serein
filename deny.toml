@@ -8,6 +8,7 @@ confidence-threshold = 0.95
 unused-allowed-license = "warn"
 include-dev = true
 allow = [
+    "0BSD",
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",
     "BSD-2-Clause",

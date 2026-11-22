@@ -1,0 +1,16 @@
+[package]
+name = "vpn"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+tokio.workspace = true
+zeroize.workspace = true
+getrandom.workspace = true
+boringtun = { version = "0.7.1", default-features = false }
+smoltcp = { version = "0.14", default-features = false, features = ["std", "medium-ip", "proto-ipv4", "socket-tcp", "socket-udp"] }
+base64 = "0.23"
+
+[lints]
+workspace = true

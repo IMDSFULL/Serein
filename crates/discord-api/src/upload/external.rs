@@ -59,7 +59,7 @@ pub async fn upload(
 	if *cancel.borrow() {
 		return Err(Error::Cancelled);
 	}
-	let client = wreq::Client::builder()
+	let client = client_core::fingerprint::tunnel(wreq::Client::builder())
 		.user_agent(concat!("Serein/", env!("CARGO_PKG_VERSION")))
 		.https_only(true)
 		.no_proxy()
@@ -350,7 +350,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn rejection_redirect_and_response_limits_do_not_return_links() {
-		let client = wreq::Client::builder()
+		let client = client_core::fingerprint::tunnel(wreq::Client::builder())
 			.no_proxy()
 			.redirect(wreq::redirect::Policy::none())
 			.retry(wreq::retry::Policy::never())
@@ -410,7 +410,7 @@ mod tests {
 			let _ = ready.send(());
 			let _ = socket.read(&mut bytes).await;
 		});
-		let client = wreq::Client::builder().no_proxy().build().unwrap();
+		let client = client_core::fingerprint::tunnel(wreq::Client::builder()).no_proxy().build().unwrap();
 		let (progress, _) = watch::channel(Status::Preparing);
 		let (cancel, mut cancellation) = watch::channel(false);
 		let task = tokio::spawn(async move {
@@ -496,7 +496,7 @@ mod tests {
 		});
 		let (progress, _) = watch::channel(Status::Preparing);
 		let result = transfer(
-			&wreq::Client::builder().no_proxy().build().unwrap(),
+			&client_core::fingerprint::tunnel(wreq::Client::builder()).no_proxy().build().unwrap(),
 			&endpoint,
 			Host::Catbox,
 			source,
@@ -550,7 +550,7 @@ mod tests {
 				.unwrap();
 		});
 		let (progress, _) = watch::channel(Status::Preparing);
-		let client = wreq::Client::builder()
+		let client = client_core::fingerprint::tunnel(wreq::Client::builder())
 			.no_proxy()
 			.redirect(wreq::redirect::Policy::none())
 			.build()

@@ -31,7 +31,7 @@ impl Playback {
 
 	pub fn new() -> Result<Self, Failure> {
 		Ok(Self {
-			client: Client::builder()
+			client: client_core::fingerprint::tunnel(Client::builder())
 				.https_only(true)
 				.no_proxy()
 				.redirect(wreq::redirect::Policy::none())

@@ -48,6 +48,7 @@ mod interface_tweaks;
 mod interface_ui;
 mod new_message;
 pub mod proxy_auth;
+pub mod vpn_settings;
 mod rich_presence;
 mod start_screen;
 mod theme_editor;
@@ -293,6 +294,8 @@ pub struct MessagingUi {
 	pub convert_emoticons: bool,
 	/// Device preference: request a conversation's page while the pointer rests on it.
 	pub preload_on_hover: bool,
+	/// In-process WireGuard VPN controls; the host owns the tunnel and fills `status`.
+	pub vpn: vpn_settings::State,
 	preload: preload::Preload,
 	pub image_share_requested: Option<(u64, Id, Vec<model::ImageShare>, String)>,
 	pub interaction_file_request: Option<String>,

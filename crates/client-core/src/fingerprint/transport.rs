@@ -84,8 +84,27 @@ const WEBSOCKET_HEADER_ORDER: [&str; 12] = [
 	"Sec-WebSocket-Extensions",
 ];
 
+/// Applies the in-process VPN route (or its fail-closed block) to a client; with the VPN off the
+/// connection is direct and never uses an environment or API proxy, as before.
+pub fn route(builder: wreq::ClientBuilder) -> Result<wreq::ClientBuilder, &'static str> {
+	match vpn::proxy_url() {
+		None => Ok(builder.no_proxy()),
+		Some(url) => Ok(builder.no_proxy().proxy(wreq::Proxy::all(url.as_str()).map_err(|_| "VPN proxy rejected")?)),
+	}
+}
+
+/// Sends a client through the in-process VPN when it is on; otherwise leaves it untouched
+/// (including its environment-proxy behaviour). Wrap every client that reaches the network.
+pub fn tunnel(builder: wreq::ClientBuilder) -> wreq::ClientBuilder {
+	match vpn::proxy_url().and_then(|url| wreq::Proxy::all(url.as_str()).ok()) {
+		Some(proxy) => builder.no_proxy().proxy(proxy),
+		None if vpn::proxy_url().is_some() => builder.no_proxy().proxy(wreq::Proxy::all("socks5h://127.0.0.1:1").expect("static proxy")),
+		None => builder,
+	}
+}
+
 /// Opens a WebSocket from discord.com's page origin with the browser TLS handshake.
-/// Proxies are not used, matching the previous direct Gateway and voice dialing.
+/// Direct unless the in-process VPN is on, matching the previous Gateway and voice dialing.
 pub async fn websocket(
 	url: &str,
 	config: tokio_tungstenite::tungstenite::protocol::WebSocketConfig,
@@ -94,9 +113,7 @@ pub async fn websocket(
 	for name in WEBSOCKET_HEADER_ORDER {
 		casing.insert(name);
 	}
-	let socket = wreq::Client::builder()
-		.emulation(emulation())
-		.no_proxy()
+	let socket = route(wreq::Client::builder().emulation(emulation()))?
 		.redirect(wreq::redirect::Policy::none())
 		.retry(wreq::retry::Policy::never())
 		.build()

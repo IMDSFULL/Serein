@@ -188,7 +188,7 @@ impl Downloads {
 					let Some(path) = path else {
 						return Err("Cancelled");
 					};
-					let client = wreq::Client::builder()
+					let client = client_core::fingerprint::tunnel(wreq::Client::builder())
 						.no_proxy()
 						.redirect(wreq::redirect::Policy::none())
 						.connect_timeout(Duration::from_secs(15))
@@ -859,7 +859,7 @@ mod tests {
 	async fn embedded_image_download_requires_bounded_png_length() {
 		let failed = Arc::new(AtomicBool::new(false));
 		let file = CopyFile::create("image.png", failed.clone()).unwrap();
-		let client = wreq::Client::builder()
+		let client = client_core::fingerprint::tunnel(wreq::Client::builder())
 			.no_proxy()
 			.redirect(wreq::redirect::Policy::none())
 			.timeout(Duration::from_secs(5))
@@ -1121,7 +1121,7 @@ mod tests {
 			std::env::temp_dir().join(format!("serein-download-tests-{}", std::process::id()));
 		fs::create_dir_all(&root).unwrap();
 		let destination = root.join("chosen.bin");
-		let client = wreq::Client::builder()
+		let client = client_core::fingerprint::tunnel(wreq::Client::builder())
 			.no_proxy()
 			.redirect(wreq::redirect::Policy::none())
 			.timeout(Duration::from_secs(5))
@@ -1302,7 +1302,7 @@ mod tests {
 		));
 		fs::create_dir_all(&root).unwrap();
 		let destination = root.join("mismatch.bin");
-		let client = wreq::Client::builder()
+		let client = client_core::fingerprint::tunnel(wreq::Client::builder())
 			.no_proxy()
 			.redirect(wreq::redirect::Policy::none())
 			.timeout(Duration::from_secs(5))
@@ -1343,7 +1343,7 @@ mod tests {
 		));
 		fs::create_dir_all(&root).unwrap();
 		let destination = root.join("bounds.bin");
-		let client = wreq::Client::builder()
+		let client = client_core::fingerprint::tunnel(wreq::Client::builder())
 			.no_proxy()
 			.redirect(wreq::redirect::Policy::none())
 			.timeout(Duration::from_secs(5))

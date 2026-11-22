@@ -108,6 +108,54 @@ async fn send(ws: &mut Socket, message: Message) -> Result<(), &'static str> {
 async fn json_send(ws: &mut Socket, value: Value) -> Result<(), &'static str> {
 	send(ws, Message::Text(value.to_string().into())).await
 }
+/// Voice/stream UDP, direct or through the in-process VPN tunnel.
+enum MediaSocket {
+	Direct(UdpSocket),
+	Tunnel(vpn::UdpConn),
+}
+impl MediaSocket {
+	async fn connect(address: SocketAddr) -> Result<Self, &'static str> {
+		match vpn::route() {
+			vpn::Route::Direct => {
+				let socket = UdpSocket::bind(if address.is_ipv4() { "0.0.0.0:0" } else { "[::]:0" })
+					.await
+					.map_err(|_| "Could not bind voice UDP socket")?;
+				socket
+					.connect(address)
+					.await
+					.map_err(|_| "Could not connect voice UDP socket")?;
+				Ok(Self::Direct(socket))
+			}
+			vpn::Route::Tunnel(tunnel) => {
+				let SocketAddr::V4(address) = address else {
+					return Err("The VPN carries IPv4 only");
+				};
+				Ok(Self::Tunnel(
+					tunnel.udp(address).await.map_err(|_| "Could not open voice UDP through the VPN")?,
+				))
+			}
+			vpn::Route::Blocked => Err("VPN is on but not connected; voice was not started"),
+		}
+	}
+	fn try_send(&self, data: &[u8]) -> std::io::Result<usize> {
+		match self {
+			Self::Direct(socket) => socket.try_send(data),
+			Self::Tunnel(socket) => socket.try_send(data),
+		}
+	}
+	async fn send(&self, data: &[u8]) -> std::io::Result<usize> {
+		match self {
+			Self::Direct(socket) => socket.send(data).await,
+			Self::Tunnel(socket) => socket.send(data).await,
+		}
+	}
+	async fn recv(&self, buffer: &mut [u8]) -> std::io::Result<usize> {
+		match self {
+			Self::Direct(socket) => socket.recv(buffer).await,
+			Self::Tunnel(socket) => socket.recv(buffer).await,
+		}
+	}
+}
 /// Media datagrams are lossy by design. A full send buffer, a network roam or a stray
 /// ICMP unreachable (which Windows reports on the next send of a connected socket) drops
 /// one packet; only a path that keeps failing for `UDP_OUTAGE` ends the call.
@@ -118,7 +166,7 @@ struct UdpFailures(Option<Instant>);
 impl UdpFailures {
 	fn send(
 		&mut self,
-		socket: &UdpSocket,
+		socket: &MediaSocket,
 		data: &[u8],
 		outage: &'static str,
 	) -> Result<(), &'static str> {
@@ -128,7 +176,7 @@ impl UdpFailures {
 	/// until the outage window expires.
 	fn try_send(
 		&mut self,
-		socket: &UdpSocket,
+		socket: &MediaSocket,
 		data: &[u8],
 		outage: &'static str,
 	) -> Result<bool, &'static str> {
@@ -157,7 +205,7 @@ fn transient_receive(error: &std::io::Error) -> bool {
 // Native voice UDP ping: signaling heartbeats alone do not maintain an idle
 // media path (notably a receive-only stream or a muted call).
 fn udp_keepalive(
-	socket: &UdpSocket,
+	socket: &MediaSocket,
 	failures: &mut UdpFailures,
 	sequence: &mut u32,
 ) -> Result<(), &'static str> {
@@ -439,7 +487,7 @@ async fn run_inner(
 	// The roster message normally follows the session key within milliseconds; only after
 	// this grace does a sole member conclude nobody else is in the call.
 	let mut secured_at: Option<Instant> = None;
-	let mut udp: Option<UdpSocket> = None;
+	let mut udp: Option<MediaSocket> = None;
 	let mut next_udp_ping = Instant::now();
 	let mut udp_ping_sequence = 0;
 	let mut udp_failures = UdpFailures::default();
@@ -851,9 +899,8 @@ async fn run_inner(
 									   if !public_ip(address) && !(cfg!(test) && local_test && address.is_loopback()){return Err("Voice server advertised a nonpublic address");}
 									   let port=u16::try_from(number(data,"port")?).ok().filter(|p|*p>0).ok_or("Invalid voice server port")?;
 									   if !data["modes"].as_array().is_some_and(|m|m.iter().any(|m|m.as_str()==Some(MODE))){return Err("Required voice transport encryption is unavailable");}
-									   let socket=UdpSocket::bind(if address.is_ipv4(){"0.0.0.0:0"}else{"[::]:0"}).await.map_err(|_|"Could not bind voice UDP socket")?;
-									   socket.connect(SocketAddr::new(address,port)).await.map_err(|_|"Could not connect voice UDP socket")?;
-									   let mut probe=[0;74];probe[..4].copy_from_slice(&[0,1,0,70]);probe[4..8].copy_from_slice(&ssrc.to_be_bytes());socket.send(&probe).await.map_err(|_|"Voice UDP discovery failed")?;
+									   let socket=MediaSocket::connect(SocketAddr::new(address,port)).await?;
+									   									   let mut probe=[0;74];probe[..4].copy_from_slice(&[0,1,0,70]);probe[4..8].copy_from_slice(&ssrc.to_be_bytes());socket.send(&probe).await.map_err(|_|"Voice UDP discovery failed")?;
 									   udp=Some(socket);discovering=true;discovery_deadline=Instant::now()+Duration::from_secs(8);
 									   emit(Status::Discovering).map_err(|_|"Call interface closed")?;
 								   },
@@ -1490,7 +1537,7 @@ async fn run_stream_inner(
 	)?;
 	let mut encryption: Option<Encryption> = None;
 	let mut secured_at: Option<Instant> = None;
-	let mut udp: Option<UdpSocket> = None;
+	let mut udp: Option<MediaSocket> = None;
 	let mut next_udp_ping = Instant::now();
 	let mut udp_ping_sequence = 0;
 	let mut udp_failures = UdpFailures::default();
@@ -1873,9 +1920,8 @@ async fn run_stream_inner(
 								if !public_ip(address) && !(cfg!(test) && local_test && address.is_loopback()){return Err("Stream server advertised a nonpublic address");}
 								let port=u16::try_from(number(data,"port")?).ok().filter(|port|*port>0).ok_or("Invalid stream server port")?;
 								if !data["modes"].as_array().is_some_and(|m|m.iter().any(|mode|mode.as_str()==Some(MODE))){return Err("Required stream transport encryption is unavailable");}
-								let socket=UdpSocket::bind(if address.is_ipv4(){"0.0.0.0:0"}else{"[::]:0"}).await.map_err(|_|"Could not bind stream UDP socket")?;
-								socket.connect(SocketAddr::new(address,port)).await.map_err(|_|"Could not connect stream UDP socket")?;
-								let mut probe=[0;74];probe[..4].copy_from_slice(&[0,1,0,70]);probe[4..8].copy_from_slice(&audio_ssrc.to_be_bytes());socket.send(&probe).await.map_err(|_|"Stream UDP discovery failed")?;
+								let socket=MediaSocket::connect(SocketAddr::new(address,port)).await?;
+																let mut probe=[0;74];probe[..4].copy_from_slice(&[0,1,0,70]);probe[4..8].copy_from_slice(&audio_ssrc.to_be_bytes());socket.send(&probe).await.map_err(|_|"Stream UDP discovery failed")?;
 								udp=Some(socket);discovering=true;discovery_deadline=Instant::now()+Duration::from_secs(8);emit(Status::Discovering).map_err(|_|"Stream interface closed")?;
 							},
 							4=>{
@@ -2657,7 +2703,7 @@ mod tests {
 		);
 	}
 
-	async fn receive_media(socket: &UdpSocket, packet: &mut [u8]) -> (usize, SocketAddr) {
+	async fn receive_media(socket: &MediaSocket, packet: &mut [u8]) -> (usize, SocketAddr) {
 		loop {
 			let received = socket.recv_from(packet).await.unwrap();
 			if received.0 != 8 {

@@ -1238,7 +1238,7 @@ async fn run(
 	control.publish(&disks);
 	let client = (!bundled_only)
 		.then(|| {
-			wreq::Client::builder()
+			client_core::fingerprint::tunnel(wreq::Client::builder())
 				.https_only(true)
 				.no_proxy()
 				.redirect(wreq::redirect::Policy::none())
@@ -3515,7 +3515,7 @@ mod tests {
             }
 		});
 		// Only this private test seam accepts HTTP; production constructs fixed HTTPS CDN URLs.
-		let client = wreq::Client::builder()
+		let client = client_core::fingerprint::tunnel(wreq::Client::builder())
 			.no_proxy()
 			.redirect(wreq::redirect::Policy::none())
 			.timeout(Duration::from_secs(2))

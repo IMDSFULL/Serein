@@ -30,7 +30,7 @@ pub(super) fn source(
 		if !url.username().is_empty() || url.password().is_some() {
 			return Err(INVALID);
 		}
-		let client = wreq::Client::builder()
+		let client = client_core::fingerprint::tunnel(wreq::Client::builder())
 			.no_proxy()
 			.no_gzip()
 			.no_brotli()

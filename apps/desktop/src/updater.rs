@@ -442,7 +442,7 @@ impl Drop for Updater {
 }
 
 fn client() -> Result<wreq::Client, String> {
-	wreq::Client::builder()
+	client_core::fingerprint::tunnel(wreq::Client::builder())
 		.https_only(true)
 		.no_proxy()
 		.user_agent(concat!("Serein/", env!("CARGO_PKG_VERSION")))

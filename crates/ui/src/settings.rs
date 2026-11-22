@@ -1066,6 +1066,24 @@ impl MessagingUi {
 				&mut self.steady_refresh_rate,
 			);
 		});
+		let title = language.text("general-vpn");
+		design::group(ui, &title, |ui| {
+			let label = language.text("general-vpn-enable");
+			let description = language.text("general-vpn-enable-description");
+			design::switch(ui, &label, Some(&description), &mut self.vpn.enabled);
+			design::card_divider(ui);
+			let label = language.text("general-vpn-profile");
+			let status = if self.vpn.status.is_empty() {
+				language.text("general-vpn-no-profile")
+			} else {
+				self.vpn.status.clone()
+			};
+			design::row(ui, &label, Some(&status), |ui| {
+				if design::button(ui, "general-vpn-import", design::ButtonKind::Outline).clicked() {
+					self.vpn.import_requested = true;
+				}
+			});
+		});
 		// The setup walkthrough runs inside the signed-in app.
 		if !signed_out {
 			design::card(ui, |ui| {

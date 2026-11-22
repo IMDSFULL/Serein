@@ -331,3 +331,7 @@ retain the same CC BY 4.0 attribution and license as the atlas, as described in
 - `svgtypes-0.16.1-LICENSE-MIT`: SHA-256 `f3c9fe731c701ed77fd5fbaac573872af04dc5869385eb9bd5e3c73c42713814`; unmodified registry `svgtypes-0.16.1`/LICENSE-MIT.
 
 The locally patched **gpu-allocator 0.28.0** retains its MIT/Apache-2.0 licenses under `vendor/gpu-allocator`. Only the Windows binding version bounds are widened to include 0.62 patch releases, aligning Direct3D types with wgpu-hal. See `vendor/gpu-allocator/SEREIN-PATCH.md` for provenance; allocator source is unchanged. The license texts also ship under `licenses/dependencies`.
+
+## In-process WireGuard VPN (`crates/vpn`)
+
+The optional VPN uses **boringtun 0.7.1** (BSD-3-Clause, Cloudflare; pulls in **ring**, Apache-2.0 AND ISC, and **x25519-dalek**, BSD-3-Clause) for the WireGuard protocol and **smoltcp 0.14** (0BSD) as the userspace TCP/UDP stack. Both are compiled in unmodified; their license texts ship in the crate sources on crates.io.

@@ -71,7 +71,7 @@ pub(super) fn source(
 		}
 		Raw {
 			input: Input::Http {
-				client: wreq::Client::builder()
+				client: client_core::fingerprint::tunnel(wreq::Client::builder())
 					.no_proxy()
 					.redirect(wreq::redirect::Policy::none())
 					.timeout(Duration::from_secs(15))

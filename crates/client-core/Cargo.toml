@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+vpn.workspace = true
 model.workspace = true
 session-cache.workspace = true
 zeroize.workspace = true

@@ -5068,3 +5068,10 @@ moderation-confirm-ban = Zabanovat
 ## crates/ui/src/interface_ui.rs
 # Context: interface_tree
 interface-ui-empty = Tento zásuvný modul zatím nemá co zobrazit.
+
+general-vpn = VPN
+general-vpn-enable = Route Serein through WireGuard
+general-vpn-enable-description = Sends this app's traffic (messages, gateway, voice and video) through your WireGuard profile, such as one exported from Proton VPN. The rest of your computer is not affected. While on, nothing is sent outside the VPN.
+general-vpn-profile = WireGuard profile
+general-vpn-no-profile = No profile imported. Export a WireGuard .conf from your VPN provider and import it here.
+general-vpn-import = Import .conf

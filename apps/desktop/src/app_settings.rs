@@ -57,6 +57,7 @@ impl Settings {
 			hide_blocked_messages: ui.hide_blocked_messages,
 			hide_ignored_messages: ui.hide_ignored_messages,
 			preload_on_hover: ui.preload_on_hover,
+			vpn_enabled: ui.vpn.enabled,
 			auto_idle: ui.auto_idle,
 			hide_title_bar: ui.hide_title_bar,
 			message_requests_collapsed: ui.message_requests_collapsed,
@@ -114,6 +115,7 @@ impl Settings {
 		ui.hide_blocked_messages = value.hide_blocked_messages;
 		ui.hide_ignored_messages = value.hide_ignored_messages;
 		ui.preload_on_hover = value.preload_on_hover;
+		ui.vpn.enabled = value.vpn_enabled;
 		ui.auto_idle = value.auto_idle;
 		ui.hide_title_bar = value.hide_title_bar;
 		ui.message_requests_collapsed = value.message_requests_collapsed;
@@ -665,6 +667,7 @@ mod tests {
 		ui.transparency = defaults.transparency;
 		ui.blur = defaults.blur;
 		ui.preload_on_hover = defaults.preload_on_hover;
+		ui.vpn.enabled = defaults.vpn_enabled;
 		ui.auto_idle = defaults.auto_idle;
 		ui.custom_title_bar = defaults.custom_title_bar;
 		ui.setup_pending = !defaults.setup_done;

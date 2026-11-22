@@ -118,7 +118,7 @@ pub fn verification_user_agent() -> String {
 #[cfg(feature = "transport")]
 mod transport;
 #[cfg(feature = "transport")]
-pub use transport::{discord_request, emulation, websocket};
+pub use transport::{discord_request, emulation, tunnel, websocket};
 
 /// Chromium client hints paired with the desktop transport baseline.
 pub fn client_hints() -> Option<[(&'static str, String); 3]> {

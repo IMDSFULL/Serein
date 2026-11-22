@@ -1668,7 +1668,7 @@ async fn download_https(raw: &str, limit: usize, gate: &Gate) -> Result<Vec<u8>,
 			return Err("Extension downloads cannot access private networks".into());
 		}
 		// Pin the validated DNS result; redirects receive a fresh validation and client.
-		let client = wreq::Client::builder()
+		let client = client_core::fingerprint::tunnel(wreq::Client::builder())
 			.no_proxy()
 			.no_gzip()
 			.redirect(wreq::redirect::Policy::none())
